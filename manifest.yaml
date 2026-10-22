@@ -1,0 +1,229 @@
+# ============================================================
+# VoxCPM TTS 引擎 manifest（v0.2.5）
+# ------------------------------------------------------------
+# v0.2.5 决策：
+#   - paradigm: integrated（全自定义模式，继承 CustomEngine）
+#   - 挂载 Gradio UI（非工作流编辑器）
+#   - 模型布局：voice/tts/voxcpm/<variant>/（diffusers 目录格式）
+#
+# 字段规范详见 PR/development-guide.md §30 manifest.yaml v0.2 规范
+# 校验逻辑见 core/src/core/manifest_schema.py
+#
+# 模型下载：
+#   VoxCPM 模型为 HuggingFace diffusers 目录格式（含 model_index.json +
+#   多个 *.safetensors 子文件），需用 huggingface_hub.snapshot_download()
+#   下载整个 repo 到 models/voice/tts/voxcpm/<variant>/
+# ============================================================
+
+# ===== v0.1 必需字段 =====
+engine_id: voxcpm_tts_c4a8f2e7
+engine_name: VoxCPM-TTS
+engine_version: 0.1.0
+aireliable_compat: ">=0.0.16"
+uv_env_name: voice-voxcpm
+export_mode: source
+
+# ===== v0.1 可选字段 =====
+description: "VoxCPM 多语言语音合成引擎（TTS / 声音设计 / 可控克隆 / 极致克隆）"
+
+# ===== v0.2 新增字段 =====
+engine_uid: aireliable://openbmb/voice/voxcpm_tts
+paradigm: integrated
+sdk_version: ">=0.3.0"
+
+# 作者信息（v0.2.7：author 重新定义为"创建引擎的作者"，不再是第三方开源项目方）
+author:
+  name: AI剑歌
+
+# 第三方开源引用（v0.2.7 新增：记录引擎引用的第三方开源模型/代码）
+third_party_references:
+  - name: VoxCPM
+    author: OpenBMB
+    github: https://github.com/OpenBMB/VoxCPM
+    website: https://github.com/OpenBMB/VoxCPM
+    license: Apache-2.0
+    description: 引擎核心 TTS（文本转语音）能力来自 OpenBMB 的 VoxCPM 模型
+
+# 来源信息
+source:
+  type: github
+  github_repo: OpenBMB/VoxCPM
+  branch: main
+
+# 升级信息
+upgrade:
+  check_url: https://api.github.com/repos/OpenBMB/VoxCPM/releases/latest
+  auto_check: false
+
+# 节点包依赖（integrated 范式不依赖节点包）
+node_packages: []
+
+# ============================================================
+# v0.2.5+ 引擎环境配置（env_config 块）
+# 供 EngineEnvManager 读取以决定是否检测 torch、默认 CUDA 版本等。
+# 字段规范详见 core/src/core/manifest_schema.py EnvConfigSchema
+#
+# VoxCPM 基于 diffusers + torch 执行 GPU 推理，依赖 torch>=2.5.0。
+# ============================================================
+env_config:
+  requires_torch: true
+  torch_version_constraint: '>=2.5.0'
+  default_cuda_version: cu128
+  supported_cuda_versions:
+    - cu121
+    - cu124
+    - cu126
+    - cu128
+  requires_python: '>=3.10,<3.13'
+  notes: 'VoxCPM 基于 diffusers + torch 执行 GPU 语音合成推理'
+  # v0.2.12+ 引擎推荐版本组合：切换 torch 时优先使用此组合，避免 torchaudio 版本错配
+  recommended_versions:
+    torch: '2.11.0'
+    torchvision: null
+    torchaudio: '2.11.0'
+    reason: 'VoxCPM 测试通过的稳定版本组合（torch 2.11.0 + torchaudio 2.11.0）'
+
+# ============================================================
+# v0.2.1 新增：models 块（模型分类规范化）
+# 详见 PR/architecture.md §16.4 manifest.models 块
+#
+# VoxCPM 模型为 HuggingFace 单文件格式（非 diffusers 目录格式）：
+#   models/voice/tts/voxcpm/voxcpm2/
+#     ├── config.json              （模型配置，标志文件）
+#     ├── model.safetensors        （主权重，VoxCPM2 使用）
+#     ├── audiovae.pth             （AudioVAE 权重）
+#     ├── tokenizer.json
+#     ├── tokenizer_config.json
+#     ├── special_tokens_map.json
+#     └── tokenization_voxcpm2.py  （VoxCPM2 专属）
+#
+#   models/voice/tts/voxcpm/voxcpm-0.5b/
+#     ├── config.json
+#     ├── pytorch_model.bin        （主权重，VoxCPM-0.5B 使用）
+#     ├── audiovae.pth
+#     ├── tokenizer.json
+#     └── tokenizer_config.json
+#
+# model_files 声明用于：
+#   1. 启动预检（检查 config.json 是否存在）
+#   2. 下载指引（提供 HuggingFace repo_id）
+# 实际下载需用 snapshot_download() 拉取整个 repo
+# ============================================================
+models:
+  # ===== 模型目录布局 =====
+  model_layout:
+    base: voice/tts/voxcpm/
+
+  # ===== 默认 variant（v0.3.0 新增）=====
+  # BaseEngine.infer 的 auto-load 优先级：request.variant > default_variant > None
+  # 选 VoxCPM2 作为默认（主力模型，48kHz，多语言）
+  # v0.3.6+ variant.name 改为 OpenBMB/voxcpm2（命名空间规范，防同名冲突）
+  default_variant: OpenBMB/voxcpm2
+
+  # ===== 模型变体列表 =====
+  # 与 model_scanner.py _KNOWN_VARIANTS 保持一致
+  # v0.3.6+ variant.name 必须为 author/model 格式（命名空间规范）
+  variants:
+    # ----- VoxCPM2（主力模型，48kHz，多语言） -----
+    - name: OpenBMB/voxcpm2
+      alias: VoxCPM2
+      base_model: voxcpm2
+      precision: fp16
+      loader: voxcpm
+      vram_required: 8GB
+      path: voice/tts/voxcpm/voxcpm2
+      model_file_ids:
+        - voxcpm2-config
+        - voxcpm2-weights
+      uv_env: envs/voice-voxcpm
+      default_steps: 10
+      default_guidance: 2.0
+
+    # ----- VoxCPM-0.5B（轻量模型，16kHz，中英） -----
+    - name: OpenBMB/voxcpm-0.5b
+      alias: VoxCPM-0.5B
+      base_model: voxcpm-0.5b
+      precision: fp16
+      loader: voxcpm
+      vram_required: 5GB
+      path: voice/tts/voxcpm/voxcpm-0.5b
+      model_file_ids:
+        - voxcpm-0.5b-config
+        - voxcpm-0.5b-weights
+      uv_env: envs/voice-voxcpm
+      default_steps: 10
+      default_guidance: 2.0
+
+  # ===== 模型文件清单 =====
+  # VoxCPM 模型为单文件格式，此处声明 config.json 作为目录标志文件
+  # （model_scanner 通过 config.json 判断 variant 是否已下载）
+  # 主权重文件（model.safetensors / pytorch_model.bin）也声明用于预检
+  # 实际下载需用 huggingface_hub.snapshot_download() 拉取整个 repo
+  model_files:
+    # ----- VoxCPM2 配置文件（标志文件，小文件） -----
+    - id: voxcpm2-config
+      role: main
+      filename: config.json
+      target_dir: voice/tts/voxcpm/voxcpm2
+      format: json
+      exclusive_group: voxcpm-main              # v0.4.x：VoxCPM2 vs VoxCPM-0.5B 互斥（下载一个就能跑）
+      required_for: [OpenBMB/voxcpm2]
+      source:
+          type: huggingface
+          repo_id: OpenBMB/VoxCPM2
+          filename: config.json
+          url: https://huggingface.co/OpenBMB/VoxCPM2/resolve/main/config.json
+          mirror_url: https://hf-mirror.com/OpenBMB/VoxCPM2/resolve/main/config.json
+      description: "VoxCPM2 模型配置文件（标志文件，实际需 snapshot_download 整个 repo，约 8GB）"
+
+    # ----- VoxCPM2 主权重文件 -----
+    - id: voxcpm2-weights
+      role: weights
+      filename: model.safetensors
+      target_dir: voice/tts/voxcpm/voxcpm2
+      format: safetensors
+      exclusive_group: voxcpm-main              # v0.4.x：互斥
+      required_for: [OpenBMB/voxcpm2]
+      source:
+          type: huggingface
+          repo_id: OpenBMB/VoxCPM2
+          filename: model.safetensors
+          url: https://huggingface.co/OpenBMB/VoxCPM2/resolve/main/model.safetensors
+          mirror_url: https://hf-mirror.com/OpenBMB/VoxCPM2/resolve/main/model.safetensors
+      description: "VoxCPM2 主模型权重（safetensors 格式）"
+
+    # ----- VoxCPM-0.5B 配置文件（标志文件） -----
+    - id: voxcpm-0.5b-config
+      role: main
+      filename: config.json
+      target_dir: voice/tts/voxcpm/voxcpm-0.5b
+      format: json
+      exclusive_group: voxcpm-main              # v0.4.x：与 voxcpm2 互斥
+      required_for: [OpenBMB/voxcpm-0.5b]
+      source:
+          type: huggingface
+          repo_id: OpenBMB/VoxCPM-0.5B
+          filename: config.json
+          url: https://huggingface.co/OpenBMB/VoxCPM-0.5B/resolve/main/config.json
+          mirror_url: https://hf-mirror.com/OpenBMB/VoxCPM-0.5B/resolve/main/config.json
+      description: "VoxCPM-0.5B 模型配置文件（标志文件，实际需 snapshot_download 整个 repo，约 1GB）"
+
+    # ----- VoxCPM-0.5B 主权重文件 -----
+    - id: voxcpm-0.5b-weights
+      role: weights
+      filename: pytorch_model.bin
+      target_dir: voice/tts/voxcpm/voxcpm-0.5b
+      format: bin
+      exclusive_group: voxcpm-main              # v0.4.x：互斥
+      required_for: [OpenBMB/voxcpm-0.5b]
+      source:
+          type: huggingface
+          repo_id: OpenBMB/VoxCPM-0.5B
+          filename: pytorch_model.bin
+          url: https://huggingface.co/OpenBMB/VoxCPM-0.5B/resolve/main/pytorch_model.bin
+          mirror_url: https://hf-mirror.com/OpenBMB/VoxCPM-0.5B/resolve/main/pytorch_model.bin
+      description: "VoxCPM-0.5B 主模型权重（PyTorch bin 格式）"
+
+  # ===== LoRA 扫描配置（v0.1 不支持运行时切换，目录留空） =====
+  loras:
+    scan_dir: voice/tts/voxcpm/loras/
