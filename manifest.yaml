@@ -18,7 +18,7 @@
 # ===== v0.1 必需字段 =====
 engine_id: voxcpm_tts_c4a8f2e7
 engine_name: VoxCPM-TTS
-engine_version: 0.1.0
+engine_version: 1.0.0
 aireliable_compat: ">=0.0.16"
 uv_env_name: voice-voxcpm
 export_mode: source
@@ -52,8 +52,8 @@ source:
 
 # 升级信息
 upgrade:
-  check_url: https://api.github.com/repos/OpenBMB/VoxCPM/releases/latest
-  auto_check: false
+  check_url: https://api.github.com/repos/AIJianGe/aireliable-engine-voxcpm/releases/latest
+  auto_check: true
 
 # 节点包依赖（integrated 范式不依赖节点包）
 node_packages: []
@@ -178,6 +178,7 @@ models:
 
     # ----- VoxCPM2 主权重文件 -----
     - id: voxcpm2-weights
+      size_bytes: 4580080592
       role: weights
       filename: model.safetensors
       target_dir: voice/tts/voxcpm/voxcpm2
@@ -210,6 +211,7 @@ models:
 
     # ----- VoxCPM-0.5B 主权重文件 -----
     - id: voxcpm-0.5b-weights
+      size_bytes: 1304698606
       role: weights
       filename: pytorch_model.bin
       target_dir: voice/tts/voxcpm/voxcpm-0.5b
