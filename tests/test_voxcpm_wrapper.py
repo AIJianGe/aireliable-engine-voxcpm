@@ -444,18 +444,28 @@ class TestGetDeviceName:
             mock_torch.cuda.get_device_name.assert_called_once_with(0)
 
     def test_cuda_returns_empty_name_falls_back_to_device(self, tmp_path: Path):
-        """torch.cuda.get_device_name 返回空字符串时，回退到 device 字符串。"""
+        """torch 拿不到卡名时回落到系统探测；系统探测也为空则用 device 字符串。
+
+        任务 71：设备探测已下沉到 ``aireliable_engine.device``，需在 SDK 层
+        mock 系统探测，避免用例结果依赖测试机是否真的有 GPU。
+        """
         mock_torch = MagicMock()
         mock_torch.cuda.is_available.return_value = True
         mock_torch.cuda.get_device_name.return_value = ""
-        with patch.dict(sys.modules, {"torch": mock_torch}):
+        with patch.dict(sys.modules, {"torch": mock_torch}), patch(
+            "aireliable_engine.device._probe_system_layer",
+            return_value={"device_name": "", "smi_ok": False},
+        ):
             wrapper = _make_wrapper(tmp_path, device="cpu")
             name = wrapper._get_device_name("cuda:0")
             assert name == "cuda:0"
 
     def test_torch_import_error_returns_device_string(self, tmp_path: Path):
-        """torch 导入失败时，回退到 device 字符串。"""
-        with patch.dict(sys.modules, {}, clear=False):
+        """torch 导入失败时，卡名回落到系统探测；仍为空则用 device 字符串。"""
+        with patch.dict(sys.modules, {}, clear=False), patch(
+            "aireliable_engine.device._probe_system_layer",
+            return_value={"device_name": "", "smi_ok": False},
+        ):
             sys.modules.pop("torch", None)
             wrapper = _make_wrapper(tmp_path, device="cpu")
             name = wrapper._get_device_name("cuda:0")

@@ -1,0 +1,44 @@
+# 开源引擎中心展示元数据（任务 80 / T4.1）
+schema: 1
+engine_id: voxcpm_tts_c4a8f2e7
+
+name:
+  zh: "VoxCPM 语音合成"
+  en: "VoxCPM TTS"
+
+description:
+  zh: "VoxCPM 多语言语音合成引擎：TTS、声音设计、可控克隆与极致克隆。"
+  en: "VoxCPM multilingual speech synthesis engine: TTS, voice design, controllable cloning and ultra cloning."
+
+category: voice
+tags:
+  - tts
+  - voice-clone
+  - multilingual
+
+repository:
+  github: AIJianGe/aireliable-engine-voxcpm
+  gitee: AIJianGe/aireliable-engine-voxcpm
+
+cover: catalog/covers/voxcpm_tts_c4a8f2e7.webp
+
+requirements:
+  python: ">=3.10,<3.13"
+  torch: ">=2.5.0"
+  gpu: required
+
+license: PolyForm-Noncommercial-1.0.0
+
+description_long:
+  zh: |-
+    VoxCPM 是面向多语言场景的语音合成引擎，覆盖普通 TTS、声音设计、可控克隆与极致克隆四种能力。
+
+    声音设计可以只凭文字描述生成新音色；可控克隆与极致克隆在参考音频基础上，分别侧重稳定性与相似度，便于按场景取舍。中英混排文本可以直接输入。
+
+    适合配音、播客、数字人与多语言内容本地化。需要 NVIDIA GPU 与 torch >= 2.5.0。
+  en: |-
+    VoxCPM is a multilingual speech-synthesis engine covering four capabilities: standard TTS, voice design, controllable cloning and ultra cloning.
+
+    Voice design creates a new timbre from a text description alone, while controllable and ultra cloning build on a reference clip and lean toward stability or similarity respectively. Mixed Chinese-English text can be fed in directly.
+
+    It suits dubbing, podcasts, avatars and multilingual localisation. An NVIDIA GPU and torch >= 2.5.0 are required.
